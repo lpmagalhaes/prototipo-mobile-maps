@@ -4,6 +4,7 @@ import { Platform, TouchableOpacity, StyleSheet, Text, View, Dimensions, } from 
 import * as Location from 'expo-location';
 import * as Permissions from 'expo-permissions';
 import Constants from 'expo-constants';
+import { Icon } from 'react-native-elements';
 
 let id = 0;
 function randomColor() {
@@ -15,8 +16,6 @@ function randomColor() {
 const { width, height } = Dimensions.get('window');
 
 const ASPECT_RATIO = width / height;
-const LATITUDE = -15.8306078
-const LONGITUDE = -48.0469026 
 const LATITUDE_DELTA = 0.0030;
 const LONGITUDE_DELTA = LATITUDE_DELTA * ASPECT_RATIO;
 const SPACE = 0.01;
@@ -25,18 +24,109 @@ function log(eventName, e) {
 	console.log(eventName, e.nativeEvent);
 }
 
+const CabecalhoComTitulo = ({titulo}) => {
+	const estiloTitulo = {
+		fontSize: 24,
+		color: 'white',
+		fontWeight: '200',
+		textAlign: 'center',
+	}
+	const estiloCabecalho = {
+		flex: 1,
+		backgroundColor: 'powderblue',
+		justifyContent: 'center',
+		alignItems: 'center',
+	}
+	return <View style={estiloCabecalho}>
+		<Text style={estiloTitulo} >
+			{titulo}
+		</Text>
+	</View>
+}
+
+const RodapeComBotao = ({mudarParaQualTela, mudarTela, texto, tipoSelecionado}) => {
+	const estiloBotao = {
+		backgroundColor: 'skyblue',
+		height: 45,
+		borderRadius: 10,
+		marginHorizontal: 5,
+		justifyContent: 'center',
+		flex: 1,
+	}
+	const estiloBotaoTexto = {
+		fontSize: 16,
+		color: 'white',
+		fontWeight: '200',
+		textAlign: 'center',
+	}
+	const estiloRodape = {
+		flex: 1,
+		backgroundColor: 'steelblue',
+		justifyContent: 'center',
+		alignItems: 'center',
+		flexDirection: 'row',
+	}
+	const estiloBotaoVoltar = {
+		...estiloBotao,
+		backgroundColor: 'gray',
+	}
+
+	return <View style={estiloRodape}>
+		{
+			mudarParaQualTela > 2 &&
+			<TouchableOpacity
+				onPress={() => mudarTela(mudarParaQualTela - 2)}
+				style={estiloBotaoVoltar}>
+				<Text style={estiloBotaoTexto} >
+					Voltar
+				</Text>
+			</TouchableOpacity>
+		}
+		{
+			(mudarParaQualTela !== 3 ||
+				(tipoSelecionado !== null &&
+					mudarParaQualTela === 3)) &&
+				<TouchableOpacity
+					onPress={() => mudarTela(mudarParaQualTela)}
+					style={estiloBotao}>
+					<Text style={estiloBotaoTexto} >
+						{texto}
+					</Text>
+				</TouchableOpacity>
+		}
+	</View>
+}
+
 export default class App extends React.Component {
 
 	state = {
 		region: {
-			latitude: LATITUDE,
-			longitude: LONGITUDE,
 			latitudeDelta: LATITUDE_DELTA,
 			longitudeDelta: LONGITUDE_DELTA,
 		},
 		markers: [],
 		location: null,
 		errorMessage: null,
+		telaParaMostrar: 1,
+		tiposDeEmergencias: [
+			{
+				icone: 'car',
+				texto: 'Acidente de carro',
+				selecionado: false,
+			},
+			{
+				icone: 'user',
+				texto: 'Pessoa machucada',
+				selecionado: false,
+			},
+			{
+				icone: 'heartbeat',
+				texto: 'Pressão Alta',
+				selecionado: false,
+			},
+		],
+		tipoSelecionado: null,
+		numeroDePessoas: 1,
 	}
 
 	componentDidMount() {
@@ -96,42 +186,236 @@ export default class App extends React.Component {
 		});
 	}
 
+	mudarTela = (mudarParaQualTela) => {
+		this.setState({telaParaMostrar: mudarParaQualTela})
+	}
+
 	render() {
-		let text = 'Waiting..';
-		if (this.state.errorMessage) {
-			text = this.state.errorMessage;
-		} else if (this.state.location) {
-			text = JSON.stringify(this.state.location);
+		const {
+			telaParaMostrar,
+			tiposDeEmergencias,
+			tipoSelecionado,
+			numeroDePessoas,
+		} = this.state
+		const estiloLogo = {
+			alignItems: 'center',
+			justifyContent: 'center',
+			backgroundColor: 'powderblue',
+			flex: 5,
 		}
-		console.log(text)
+		const estiloCorpo = {
+			flex: 4,
+			backgroundColor: 'skyblue',
+		}
+
 		return  (
 			<View style={styles.container}>
 				{
-					this.state.location === null &&
-					<Text style={{flex: 1, color: '#000000'}}>Carregando ...</Text>
+					telaParaMostrar === 1 &&
+					<>
+					<View style={estiloLogo}>
+						<Icon 
+							type='font-awesome'
+							name='ambulance'
+							color='white'
+							size={128}
+						/>
+					</View>
+					<RodapeComBotao 
+						mudarTela={this.mudarTela}
+						texto={'Fazer Chamada'}
+						mudarParaQualTela={2}/>
+					</>
 				}
 				{
-					this.state.location &&
-						<MapView
-							provider={this.props.provider}
-							style={styles.map}
-							initialRegion={this.state.region}
-							onRegionChange={e => console.log(e)}
-						>
-							{this.state.markers.map(marker => (
-								<Marker
-									key={marker.key}
-									coordinate={marker.coordinate}
-									pinColor={marker.color}
-									onSelect={e => log('onSelect', e)}
-									onDrag={e => log('onDrag', e)}
-									onDragStart={e => log('onDragStart', e)}
-									onDragEnd={e => log('onDragEnd', e)}
-									onPress={e => log('onPress', e)}
-									draggable
-								/>
-							))}
-						</MapView>
+					telaParaMostrar === 2 &&
+						<>
+						<CabecalhoComTitulo
+							titulo={'Tipo de Emergência'}/>
+						<View style={{
+							...estiloCorpo,
+							alignItems: 'center',
+						}}>
+						<Text
+							style={{
+								color: 'white',
+							}}>
+							Selecione um tipo
+						</Text>
+						{
+							tiposDeEmergencias.map(item => {
+								return <TouchableOpacity 
+									key={item.icone}
+									onPress={() => this.setState({tipoSelecionado: item.icone})}
+									style={{
+										flexDirection: 'row',
+										marginHorizontal: 10,
+										marginVertical: 10,
+										backgroundColor: tipoSelecionado === item.icone ? 'green' : 'red',
+										height: 65,
+										alignItems: 'center',
+										justifyContent: 'center',
+										borderRadius: 5,
+									}}>
+									<View style={{flex: 1,}}>
+										<Icon
+											type='font-awesome'
+											name={item.icone}
+											color='white'
+											size={24}/>
+									</View>
+									<View style={{flex: 2,}}>
+										<Text
+											style={{
+												color: 'white',
+											}}>
+											{item.texto}
+										</Text>
+									</View>
+								</TouchableOpacity>
+							})
+						}
+					</View>
+						<RodapeComBotao 
+							mudarTela={this.mudarTela}
+							texto={'Selecionar Tipo'}
+							mudarParaQualTela={3}
+							tipoSelecionado={tipoSelecionado}/>
+						</>
+				}
+				{
+					telaParaMostrar === 3 &&
+						<>
+						<CabecalhoComTitulo
+							titulo={'Pessoas Envolvidas'}/>
+						<View style={{...estiloCorpo, justifyContent: 'center'}}>
+							<View
+								style={{
+									flexDirection: 'row',
+									alignItems: 'center',
+								}}>
+								<TouchableOpacity
+									onPress={() => this.setState({numeroDePessoas: numeroDePessoas-1 > 0 ? numeroDePessoas - 1 : 1 })}
+									style={{
+										flex: 1,
+										backgroundColor: 'red',
+										height: 65,
+										borderRadius: 5,
+										justifyContent: 'center',
+										marginHorizontal: 10 
+									}}>
+									<Icon
+										type='font-awesome'
+										name='minus'
+										color='white'
+										size={24}/>
+								</TouchableOpacity>
+								<Text
+									style={{
+										fontSize: 128,
+										color: 'white',
+									}}>
+									{numeroDePessoas}
+								</Text>
+								<TouchableOpacity
+									onPress={() => this.setState({numeroDePessoas: numeroDePessoas+1})}
+									style={{
+										flex: 1,
+										backgroundColor: 'red',
+										height: 65,
+										borderRadius: 5,
+										justifyContent: 'center',
+										marginHorizontal: 10 
+									}}>
+									<Icon
+										type='font-awesome'
+										name='plus'
+										color='white'
+										size={24}/>
+								</TouchableOpacity>
+							</View>
+						</View>
+						<RodapeComBotao 
+							mudarTela={this.mudarTela}
+							texto={'Selecionar Pessoas'}
+							mudarParaQualTela={4}/>
+						</>
+				}
+				{
+					telaParaMostrar === 4 &&
+						<>
+						<CabecalhoComTitulo
+							titulo={'Localização'}/>
+						<View style={{
+							...estiloCorpo,
+							alignItems: 'center',
+							justifyContent: 'center',
+						}}>
+							{
+								!this.state.location && 
+								<Text
+									style={{
+										fontSize: 24,
+										color: 'white',
+										fontWeight: '200',
+										textAlign: 'center',
+									}}>
+									Carregando ...
+								</Text>
+							}
+							{
+								this.state.location &&
+									<MapView
+										provider={this.props.provider}
+										style={styles.map}
+										initialRegion={this.state.region}
+										onRegionChange={e => console.log(e)}
+									>
+										{this.state.markers.map(marker => (
+											<Marker
+												key={marker.key}
+												coordinate={marker.coordinate}
+												pinColor={marker.color}
+												onSelect={e => log('onSelect', e)}
+												onDrag={e => log('onDrag', e)}
+												onDragStart={e => log('onDragStart', e)}
+												onDragEnd={e => log('onDragEnd', e)}
+												onPress={e => log('onPress', e)}
+												draggable
+											/>
+										))}
+									</MapView>
+							}
+						</View>
+						<RodapeComBotao 
+							mudarTela={this.mudarTela}
+							texto={'Selecionar Local'}
+							mudarParaQualTela={5}/>
+						</>
+				}
+				{
+					telaParaMostrar === 5 &&
+						<>
+						<CabecalhoComTitulo
+							titulo={'Resumo'}/>
+						<View  style={estiloCorpo}>
+							<Text>Tipo de emergencia</Text>
+						</View>
+						<RodapeComBotao 
+							mudarTela={this.mudarTela}
+							texto={'Confimar'}
+							mudarParaQualTela={6}/>
+						</>
+				}
+				{
+					telaParaMostrar === 6 &&
+						<>
+						<CabecalhoComTitulo
+							titulo={'Em Progresso'}/>
+						<View  style={estiloCorpo}>
+							<Text>Tipo de emergencia</Text>
+						</View>
+						</>
 				}
 			</View>
 		)
@@ -141,10 +425,9 @@ export default class App extends React.Component {
 
 const styles = StyleSheet.create({
 	container: {
-		...StyleSheet.absoluteFillObject,
-		justifyContent: 'flex-end',
-		alignItems: 'center',
 		paddingTop: Constants.statusBarHeight,
+		flex: 1,
+		paddingHorizontal: 20,
 	},
 	map: {
 		...StyleSheet.absoluteFillObject,
